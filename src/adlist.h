@@ -30,44 +30,50 @@
 
 #ifndef __ADLIST_H__
 #define __ADLIST_H__
+// 双端链表头文件
 
 /* Node, List, and Iterator are the only data structures used currently. */
 
+
+// 链表节点结构体定义
 typedef struct listNode {
-    struct listNode *prev;
-    struct listNode *next;
-    void *value;
+    struct listNode *prev; // 前置节点
+    struct listNode *next; // 后置节点
+    void *value; // 节点值
 } listNode;
 
+// Redis为双端链表定义了一个迭代器结构，其能正序和逆序的访问list结构。
 typedef struct listIter {
-    listNode *next;
-    int direction;
+    listNode *next; // 下一个节点的指针
+    int direction; //方向，正序和逆序
 } listIter;
 
+// 链表的结构体
 typedef struct list {
-    listNode *head;
-    listNode *tail;
-    void *(*dup)(void *ptr);
-    void (*free)(void *ptr);
-    int (*match)(void *ptr, void *key);
-    unsigned long len;
+    listNode *head; // 链表头节点
+    listNode *tail; // 链表尾节点
+    void *(*dup)(void *ptr); // 自定义节点值复制函数
+    void (*free)(void *ptr); // 自定义节点值释放函数
+    int (*match)(void *ptr, void *key); // 自定义节点值匹配函数
+    unsigned long len; // 链表长度
 } list;
 
 /* Functions implemented as macros */
-#define listLength(l) ((l)->len)
-#define listFirst(l) ((l)->head)
-#define listLast(l) ((l)->tail)
-#define listPrevNode(n) ((n)->prev)
-#define listNextNode(n) ((n)->next)
-#define listNodeValue(n) ((n)->value)
+// Redis对链表结构体提供了一系列的宏定义函数，方便操作其结构体参数
+#define listLength(l) ((l)->len) // 获取list长度
+#define listFirst(l) ((l)->head) // 获取list头节点指针
+#define listLast(l) ((l)->tail) // 获取list尾节点指针
+#define listPrevNode(n) ((n)->prev) // 获取当前节点的前一个节点
+#define listNextNode(n) ((n)->next) // 获取当前节点的后一个节点
+#define listNodeValue(n) ((n)->value) // 获取当前节点的值
 
-#define listSetDupMethod(l,m) ((l)->dup = (m))
-#define listSetFreeMethod(l,m) ((l)->free = (m))
-#define listSetMatchMethod(l,m) ((l)->match = (m))
+#define listSetDupMethod(l,m) ((l)->dup = (m)) // 设定节点值复制函数
+#define listSetFreeMethod(l,m) ((l)->free = (m)) // 设定节点值释放函数
+#define listSetMatchMethod(l,m) ((l)->match = (m)) // 设定节点值匹配函数
 
-#define listGetDupMethod(l) ((l)->dup)
-#define listGetFree(l) ((l)->free)
-#define listGetMatchMethod(l) ((l)->match)
+#define listGetDupMethod(l) ((l)->dup) // 获取节点值赋值函数
+#define listGetFree(l) ((l)->free) // 获取节点值释放函数
+#define listGetMatchMethod(l) ((l)->match) // 获取节点值匹配函数
 
 /* Prototypes */
 list *listCreate(void);
@@ -87,7 +93,8 @@ void listRewindTail(list *list, listIter *li);
 void listRotate(list *list);
 
 /* Directions for iterators */
-#define AL_START_HEAD 0
-#define AL_START_TAIL 1
+// 链表迭代器的方向宏定义
+#define AL_START_HEAD 0  // 从头到尾
+#define AL_START_TAIL 1  // 从尾到头
 
 #endif /* __ADLIST_H__ */
