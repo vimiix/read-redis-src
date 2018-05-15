@@ -55,27 +55,29 @@
 static int zslLexValueGteMin(robj *value, zlexrangespec *spec);
 static int zslLexValueLteMax(robj *value, zlexrangespec *spec);
 
+// 新建跳跃表节点
 zskiplistNode *zslCreateNode(int level, double score, robj *obj) {
-    zskiplistNode *zn = zmalloc(sizeof(*zn)+level*sizeof(struct zskiplistLevel));
-    zn->score = score;
-    zn->obj = obj;
+    zskiplistNode *zn = zmalloc(sizeof(*zn)+level*sizeof(struct zskiplistLevel)); //分配内存
+    zn->score = score; // 设定分值
+    zn->obj = obj; // 设定成员对象
     return zn;
 }
 
+// 新建跳跃表
 zskiplist *zslCreate(void) {
     int j;
     zskiplist *zsl;
 
-    zsl = zmalloc(sizeof(*zsl));
-    zsl->level = 1;
-    zsl->length = 0;
-    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,NULL);
+    zsl = zmalloc(sizeof(*zsl)); //分配内存
+    zsl->level = 1; // 初始化表中最大层数为1
+    zsl->length = 0; // 初始化表中节点数为0
+    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,NULL); // 创建一个层深度为32的跳跃头节点
     for (j = 0; j < ZSKIPLIST_MAXLEVEL; j++) {
-        zsl->header->level[j].forward = NULL;
-        zsl->header->level[j].span = 0;
+        zsl->header->level[j].forward = NULL; // 初始化Level中每层的前向节点都置位NULL
+        zsl->header->level[j].span = 0; // 跨度为0
     }
-    zsl->header->backward = NULL;
-    zsl->tail = NULL;
+    zsl->header->backward = NULL; // 后向指针置位NULL
+    zsl->tail = NULL; // 表尾节点指向NULL
     return zsl;
 }
 
@@ -107,15 +109,24 @@ int zslRandomLevel(void) {
     return (level<ZSKIPLIST_MAXLEVEL) ? level : ZSKIPLIST_MAXLEVEL;
 }
 
+
+/*
+插入节点的关键在找到在何处插入该节点，跳跃表是按照score分值进行排序的。
+查找步骤：从当前最高的level开始，向前查找，如果当前节点的score小于插入节点的score，继续向前；
+反之，则降低一层继续查找，直到第一层为止。此时，插入点就位于找到的节点之后
+*/
 zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
+    // updata[]数组记录每一层位于插入节点的前一个节点
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    // rank[]记录每一层位于插入节点的前一个节点的排名
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i, level;
 
     serverAssert(!isnan(score));
-    x = zsl->header;
-    for (i = zsl->level-1; i >= 0; i--) {
+    x = zsl->header; // 表头节点指针
+    for (i = zsl->level-1; i >= 0; i--) { // 从最高层开始查找
         /* store rank that is crossed to reach the insert position */
+        // 存储rank值是为了交叉快速地到达插入位置
         rank[i] = i == (zsl->level-1) ? 0 : rank[i+1];
         while (x->level[i].forward &&
             (x->level[i].forward->score < score ||
